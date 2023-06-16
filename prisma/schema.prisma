@@ -1,0 +1,99 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["jsonProtocol"]
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id        String    @id @default(uuid())
+  userId    String
+  content   String
+  createdAt DateTime  @default(now())
+  likes     Like[]
+  listens   Listens[]
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([createdAt, id])
+  @@index([userId])
+}
+
+model Listens {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([createdAt, id])
+  @@index([userId])
+  @@index([postId])
+}
+
+model Like {
+  userId    String
+  PostId    String
+  createdAt DateTime @default(now())
+  Post      Post     @relation(fields: [PostId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, PostId])
+  @@index([userId])
+  @@index([PostId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  likes         Like[]
+  listens       Listens[]
+  Posts         Post[]
+  sessions      Session[]
+  User_A        User[]    @relation("Followers")
+  User_B        User[]    @relation("Followers")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
